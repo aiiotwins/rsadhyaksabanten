@@ -8,8 +8,26 @@ use yii\helpers\Url;
 /* @var $model app\modules\attendance\models\UploadLogForm */
 
 $this->title = 'Upload Log Absensi Fingerprint';
-$this->params['breadcrumbs'][] = ['label' => 'Attendance', 'url' => ['index']];
+$this->params['breadcrumbs'][] = ['label' => 'Admin'];
+$this->params['breadcrumbs'][] = ['label' => 'Kepegawaian'];
+$this->params['breadcrumbs'][] = ['label' => 'Attendance'];
 $this->params['breadcrumbs'][] = $this->title;
+
+// Daftar bulan
+$months = [
+    '01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
+    '04' => 'April',   '05' => 'Mei',      '06' => 'Juni',
+    '07' => 'Juli',    '08' => 'Agustus',  '09' => 'September',
+    '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
+];
+
+// Daftar tahun (misal: 3 tahun ke belakang sampai tahun sekarang)
+$currentYear = (int)date('Y');
+$years = range($currentYear, $currentYear - 3);
+$years = array_combine($years, $years);
+
+$currentMonth = date('m');
+
 ?>
 
 <div class="attendance-log-upload card">
@@ -22,6 +40,8 @@ $this->params['breadcrumbs'][] = $this->title;
             'month' => date('n')
         ], [
             'class' => 'btn btn-light btn-sm text-success fw-bold',
+            'data-bs-toggle' => 'modal',
+            'data-bs-target' => '#modalDownloadExcel',
             'target' => '_blank'
         ]) ?>
 
@@ -59,9 +79,8 @@ $this->params['breadcrumbs'][] = $this->title;
         </div>
 
         <!-- Area Notifikasi Pesan -->
-        <!-- <div id="alertBox" class="alert d-none" role="alert"></div> -->
         <div id="notifikasiSubmit" class="col-md-4" style="display:none;">
-            <span class="badge text-bg-primary"><strong>Data Berhasil Diupload !</strong></span>
+            <span class="badge text-bg-primary"><strong id="status_pesan"></strong></span>
         </div>  
         
         <div class="row">
@@ -91,30 +110,52 @@ $this->params['breadcrumbs'][] = $this->title;
         <?php ActiveForm::end(); ?>
     </div>
 </div>
+
+<div class="modal fade" id="modalDownloadExcel" tabindex="-1" aria-labelledby="modalDownloadExcelLabel" aria-hidden="true">
+    <div class="modal-dialog"> <!-- Hapus modal-sm agar tidak terlalu sempit -->
+        <div class="modal-content">
+            <?= \yii\helpers\Html::beginForm(['export-excel'], 'get', ['target' => '_blank']) ?>
+            
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalDownloadExcelLabel">Download Report Excel</h5>
+                <!-- Di Bootstrap 5 gunakan class btn-close dan taruh setelah judul -->
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="year" class="form-label">Tahun</label>
+                    <?= \yii\helpers\Html::dropDownList('year', $currentYear, $years, [
+                        'class' => 'form-select',
+                        'id' => 'year',
+                        'required' => true
+                    ]) ?>
+                </div>
+
+                <div class="mb-3">
+                    <label for="month" class="form-label">Bulan</label>
+                    <?= \yii\helpers\Html::dropDownList('month', $currentMonth, $months, [
+                        'class' => 'form-select',
+                        'id' => 'month',
+                        'required' => true
+                    ]) ?>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <?= \yii\helpers\Html::submitButton('Download', ['class' => 'btn btn-success', 'data-bs-dismiss' => 'modal']) ?>
+            </div>
+            
+            <?= \yii\helpers\Html::endForm() ?>
+        </div>
+    </div>
+</div>
+
 <?php
 $js = <<<JS
 
 var alertTimer = null;
-function showAlert(message, type = 'success') {
-    //var \$alert = $('#alertBox');
-
-    // 1. Bersihkan timer lama jika user memicu alert sebelum 10 detik selesai
-    if (alertTimer) {
-        clearTimeout(alertTimer);
-    }
-
-    // 2. Set pesan dan tipe warna (success / danger)
-    //\$alert.find('.alert-message').text(message);
-    //\$alert.removeClass('alert-success alert-danger').addClass('alert-' + type);
-
-    // 3. Tampilkan dengan efek fadeIn
-    //\$alert.stop(true, true).fadeIn(400);
-
-    // 4. Set waktu otomatis hilang setelah 10 detik (10.000 ms)
-    alertTimer = setTimeout(function () {
-        //\$alert.fadeOut(500); // Menghilang perlahan selama 0.5 detik
-    }, 10000);
-}
 
 // Event tombol silang (x) untuk menutup manual sebelum 10 detik
 $(document).on('click', '.alert-close', function () {
@@ -166,8 +207,7 @@ $('#uploadForm').on('beforeSubmit', function (e) {
         success: function (response) {
             // Ketika server merespons sukses
             if (response.success) {
-                showAlert(response.message, 'success');
-                //alert(response.message || 'File berhasil diunggah!');
+                $('#status_pesan').text(response.message);
                 \$form[0].reset(); // Reset form/input file
             } else {
                 alert('Gagal: ' + response.message);
@@ -183,7 +223,7 @@ $('#uploadForm').on('beforeSubmit', function (e) {
             \$btnSubmit.prop('disabled', false).text('Unggah Dan Ekstrak Data');
             
             $('#notifikasiSubmit').css({ display: "block" })
-            $('#notifikasiSubmit').fadeOut(3000);
+            $('#notifikasiSubmit').fadeOut(15000);
             // Opsional: Sembunyikan kembali progress bar setelah 2 detik
             setTimeout(function() {
                 \$progressWrapper.addClass('d-none');

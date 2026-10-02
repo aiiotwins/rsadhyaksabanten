@@ -4,6 +4,7 @@ namespace app\modules\admin\modules\kepegawaian\modules\attendance\services;
 
 use Yii;
 use yii\db\Query;
+use yii\db\Expression;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -41,20 +42,27 @@ class AttendanceExportService
 
         // 2. Ambil data dari tabel attendance_daily_summary
         $logs = (new Query())
-            ->select([
-                'pin',
-                'date',
-                'day' => 'DAY(date)',
-                'clock_in',
-                'clock_out',
-                'duration_hours' => 'ROUND(TIMESTAMPDIFF(SECOND, clock_in, clock_out) / 3600, 1)',
-                'status'
-            ])
-            ->from('{{%attendance_daily_summary}}')
-            ->where(['between', 'date', $startDate, $endDate])
-            ->andWhere(['not', ['clock_in' => null]])
-            ->orderBy(['pin' => SORT_ASC, 'date' => SORT_ASC])
-            ->all();
+                ->select([
+                    'attendance_daily_summary.pin',
+                    'mst_pegawai.nama',
+                    'mst_pegawai.kode_karyawan AS NIP',
+                    'mst_pegawai.jabatan_fungsional as jabatan',
+                    'attendance_daily_summary.date',
+                    'day' => new Expression('DAY(attendance_daily_summary.date)'),
+                    'attendance_daily_summary.clock_in',
+                    'attendance_daily_summary.clock_out',
+                    'duration_hours' => new Expression('ROUND(TIMESTAMPDIFF(SECOND, attendance_daily_summary.clock_in, attendance_daily_summary.clock_out) / 3600, 1)'),
+                    'attendance_daily_summary.status'
+                ])
+                ->from('attendance_daily_summary')
+                ->leftJoin('mst_pegawai', 'mst_pegawai.fingerprint_id = attendance_daily_summary.pin')
+                ->where(['between', 'attendance_daily_summary.date', $startDate, $endDate])
+                ->andWhere(['not', ['attendance_daily_summary.clock_in' => null]])
+                ->orderBy([
+                    'attendance_daily_summary.pin' => SORT_ASC, 
+                    'attendance_daily_summary.date' => SORT_ASC
+                ])
+                ->all();
 
         // 3. Kelompokkan per PIN (Nama Pegawai)
         $groupedData = [];
@@ -62,6 +70,9 @@ class AttendanceExportService
             $pin = $row['pin'];
             if (!isset($groupedData[$pin])) {
                 $groupedData[$pin] = [
+                    'nama' => $row['nama'],
+                    'NIP' => $row['NIP'],
+                    'jabatan' => $row['jabatan'],
                     'pin' => $pin,
                     'total_hours' => 0.0,
                     'attended_days' => [],
@@ -177,9 +188,9 @@ class AttendanceExportService
             $keteranganStr = !empty($data['keterangan']) ? implode(', ', $data['keterangan']) : '0';
 
             $sheet->setCellValue("A{$rowIdx}", $no);
-            $sheet->setCellValue("B{$rowIdx}", $data['pin']); // PIN sebagai NAMA
-            $sheet->setCellValue("C{$rowIdx}", ''); // NIP (opsional)
-            $sheet->setCellValue("D{$rowIdx}", ''); // JABATAN (opsional)
+            $sheet->setCellValue("B{$rowIdx}", $data['nama']); // PIN sebagai NAMA
+            $sheet->setCellValue("C{$rowIdx}", $data['NIP']); // NIP (opsional)
+            $sheet->setCellValue("D{$rowIdx}", $data['jabatan']); // JABATAN (opsional)
             $sheet->setCellValue("E{$rowIdx}", $data['sakit']);
             $sheet->setCellValue("F{$rowIdx}", $data['cuti']);
             $sheet->setCellValue("G{$rowIdx}", $data['dl']);
