@@ -52,7 +52,6 @@ $currentMonth = date('m');
             Upload file ekstensi <code>.dat</code> atau <code>.txt</code> dari mesin absensi. Duplikasi scan dengan PIN dan detik yang sama akan otomatis disaring.
         </div>
         
-
         <?php $form = ActiveForm::begin([
             'id' => 'uploadForm',
             'action' => ['upload'],
@@ -108,6 +107,8 @@ $currentMonth = date('m');
             </div>               
         </div>
         <?php ActiveForm::end(); ?>
+
+        <strong id="pesanberhasil"></strong>
     </div>
 </div>
 
@@ -208,6 +209,7 @@ $('#uploadForm').on('beforeSubmit', function (e) {
             // Ketika server merespons sukses
             if (response.success) {
                 $('#status_pesan').text(response.message);
+                $('#pesanberhasil').text(response.message);
                 \$form[0].reset(); // Reset form/input file
             } else {
                 alert('Gagal: ' + response.message);

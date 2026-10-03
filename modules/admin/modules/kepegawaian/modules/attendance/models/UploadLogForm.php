@@ -148,7 +148,7 @@ class UploadLogForm extends Model
                 'totalInserted' => $totalRawInserted,
                 'totalSkipped' => $skipped,
                 'totalSummary' => $summaryCount,
-                'message' => "Proses selesai. Dibaca: {$totalRawRead} baris. Data baru masuk: {$totalRawInserted}. Duplikat diabaikan: {$skipped}. Rekap harian diperbarui: {$summaryCount}."
+                'message' => "Proses selesai. Dibaca: {$totalRawRead} baris. Data baru masuk: {$totalRawInserted}. Duplikat diabaikan: {$skipped}. Rekap harian diperbarui: {$summaryCount}. Waktu : ".date('Y-m-d H:i:s')
             ];
 
         } catch (\Exception $e) {

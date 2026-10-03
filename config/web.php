@@ -22,11 +22,33 @@ $config = [
         '@npm'   => '@vendor/npm-asset',
     ],
     'modules' => [ 
-        'admin' => [ 
+        'rbac' => [
+            'class' => 'mdm\admin\Module',
+            //'layout' => 'left-menu', // opsional: 'left-menu', 'right-menu', 'top-menu'
+            'layout' => '@app/views/layouts/main.php'
+        ],
+        'admin' => [
             'class' => 'app\modules\admin\Module',
+            'modules' => [
+                'kepegawaian' => [
+                    'class' => 'app\modules\admin\modules\kepegawaian\Module',
+                    'modules' => [
+                        'attendance' => [
+                            'class' => 'app\modules\admin\modules\kepegawaian\modules\attendance\Module',
+                        ],
+                    ],
+                ],
+            ],
         ],
     ],
     'components' => [
+        'authManager' => [
+            'class' => 'yii\rbac\DbManager', // Wajib DbManager
+        ],
+        // 'user' => [
+        //     'identityClass' => 'app\models\User',
+        //     'loginUrl' => ['site/login'],
+        // ],
         'request' => [
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
             'cookieValidationKey' => '_DpbTQvVgZl1GzvGiDTtgORvmxQwQixx',
@@ -37,6 +59,7 @@ $config = [
         'user' => [
             'identityClass' => \app\models\User::class,
             'enableAutoLogin' => true,
+                'loginUrl' => ['site/login'],
         ],
         'errorHandler' => [
             'errorAction' => 'site/error',
@@ -57,6 +80,15 @@ $config = [
             'showScriptName' => false,
             'rules' => [
             ],
+        ],
+    ],
+    'as access' => [
+        'class' => 'mdm\admin\components\AccessControl',
+        'allowActions' => [
+            'site/*',       // login, logout, error, captcha
+            'rbac/*',       // sementara dibuka saat setup awal; KUNCI setelah selesai!
+            // 'debug/*',   // jika di local development
+            // 'gii/*',
         ],
     ],
     'params' => $params,

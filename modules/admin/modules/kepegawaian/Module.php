@@ -20,10 +20,10 @@ class Module extends \yii\base\Module
         parent::init();
 
         // custom initialization code goes here
-        $this->modules = [
-            'attendance' => [
-                'class' => 'app\modules\admin\modules\kepegawaian\modules\attendance\Module',
-            ],
-        ];
+        // $this->modules = [
+        //     'attendance' => [
+        //         'class' => 'app\modules\admin\modules\kepegawaian\modules\attendance\Module',
+        //     ],
+        // ];
     }
 }
