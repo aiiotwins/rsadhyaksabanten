@@ -6,7 +6,11 @@ $db = require __DIR__ . '/db.php';
 $config = [
     'id' => 'basic',
     'basePath' => dirname(__DIR__),
+    'defaultRoute' => 'admin',
     'bootstrap' => ['log'],
+    'timeZone' => 'Asia/Jakarta',
+    'language' => 'id-ID',
+    'sourceLanguage' => 'en-US',
     'container' => [
         'singletons' => [
             \yii\mail\MailerInterface::class => [
@@ -55,11 +59,13 @@ $config = [
         ],
         'cache' => [
             'class' => \yii\caching\FileCache::class,
+            'cachePath' => '@runtime/cache',
+            'defaultDuration' => 86400, // 24 jam
         ],
         'user' => [
             'identityClass' => \app\models\User::class,
             'enableAutoLogin' => true,
-                'loginUrl' => ['site/login'],
+            'loginUrl' => ['site/login'],
         ],
         'errorHandler' => [
             'errorAction' => 'site/error',
@@ -79,6 +85,25 @@ $config = [
             'enablePrettyUrl' => true,
             'showScriptName' => false,
             'rules' => [
+            ],
+        ],
+        'formatter' => [
+            'class' => 'yii\i18n\Formatter',
+            'dateFormat' => 'php:d-m-Y',
+            'datetimeFormat' => 'php:d-m-Y H:i:s',
+            'timeFormat' => 'php:H:i:s',
+            'defaultTimeZone' => 'Asia/Jakarta',
+            'timeZone' => 'Asia/Jakarta',
+            'locale' => 'id_ID', // Memastikan output teks seperti nama bulan menggunakan format Indonesia
+        ],
+        'session' => [
+            'class' => 'yii\web\Session',
+            // Opsional: tentukan folder khusus agar tidak campur dengan /tmp OS
+            'savePath' => '@runtime/sessions',
+            'timeout' => 86400,
+            'cookieParams' => [
+                'httponly' => true,
+                'lifetime' => 86400,
             ],
         ],
     ],

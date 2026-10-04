@@ -34,17 +34,17 @@ class SiteController extends Controller
     public function behaviors(): array
     {
         return [
-            'access' => [
-                'class' => AccessControl::class,
-                'only' => ['logout'],
-                'rules' => [
-                    [
-                        'actions' => ['logout'],
-                        'allow' => true,
-                        'roles' => ['@'],
-                    ],
-                ],
-            ],
+            // 'access' => [
+            //     'class' => AccessControl::class,
+            //     'only' => ['logout'],
+            //     'rules' => [
+            //         [
+            //             'actions' => ['logout'],
+            //             'allow' => true,
+            //             'roles' => ['@'],
+            //         ],
+            //     ],
+            // ],
             'verbs' => [
                 'class' => VerbFilter::class,
                 'actions' => [
@@ -89,13 +89,15 @@ class SiteController extends Controller
     public function actionLogin(): Response|string
     {
         if (!Yii::$app->user->isGuest) {
-            return $this->goHome();
+            return $this->redirect(['/site/login']);
         }
+
+        $this->layout = 'login'; // mengarah ke views/layouts/login.php
 
         $model = new LoginForm($this->security);
 
         if ($model->load($this->request->post()) && $model->login()) {
-            return $this->goBack();
+            return $this->redirect(['/admin']);
         }
 
         $model->password = '';
@@ -110,6 +112,16 @@ class SiteController extends Controller
      */
     public function actionLogout(): Response
     {
+        $userId = Yii::$app->user->id;
+
+        if ($userId !== null) {
+            // Hapus cache identity user sebelum proses logout
+            Yii::$app->cache->delete('user_identity_' . $userId);
+            
+            // ATAU jika menggunakan TagDependency yang dibahas sebelumnya:
+            // \yii\caching\TagDependency::invalidate(Yii::$app->cache, \app\models\User::getUserCacheTag($userId));
+        }
+
         Yii::$app->user->logout();
 
         return $this->goHome();

@@ -7,6 +7,7 @@ namespace app\models;
 use Yii;
 use yii\db\ActiveRecord;
 use yii\web\IdentityInterface;
+use yii\caching\TagDependency;
 
 class User extends ActiveRecord implements IdentityInterface
 {
@@ -21,9 +22,24 @@ class User extends ActiveRecord implements IdentityInterface
         return '{{%user}}';
     }
 
+    public static function getUserCacheTag($userId)
+    {
+        return 'user_tag_' . $userId;
+    }
+
     public static function findIdentity($id)
     {
-        return static::findOne(['id' => $id, 'status' => self::STATUS_ACTIVE]);
+        $cacheKey = 'user_identity_' . $id;
+
+        return Yii::$app->cache->getOrSet(
+            $cacheKey,
+            function () use ($id) {
+                return static::findOne(['id' => $id, 'status' => self::STATUS_ACTIVE]);
+            },
+            3600,
+            // Ikat cache ini ke tag spesifik user ID tersebut
+            new TagDependency(['tags' => self::getUserCacheTag($id)])
+        );
     }
 
     public static function findIdentityByAccessToken($token, $type = null)
@@ -33,7 +49,32 @@ class User extends ActiveRecord implements IdentityInterface
 
     public static function findByUsername($username)
     {
-        return static::findOne(['username' => $username, 'status' => self::STATUS_ACTIVE]);
+        $cleanUsername = strtolower(trim((string)$username));
+        $cacheKey = 'user_username_' . md5($cleanUsername);
+
+        // Coba ambil dari cache terlebih dahulu
+        $user = Yii::$app->cache->get($cacheKey);
+        if ($user !== false) {
+            return $user;
+        }
+
+        // Jika tidak ada di cache, query ke database
+        $user = static::findOne([
+            'username' => $cleanUsername,
+            'status' => self::STATUS_ACTIVE,
+        ]);
+
+        // Jika user ditemukan di database, simpan ke cache bersama TagDependency
+        if ($user !== null) {
+            Yii::$app->cache->set(
+                $cacheKey,
+                $user,
+                3600,
+                new TagDependency(['tags' => self::getUserCacheTag($user->id)])
+            );
+        }
+
+        return $user;
     }
 
     public function getId()
@@ -69,5 +110,31 @@ class User extends ActiveRecord implements IdentityInterface
     public function getPasswordHash()
     {
         return $this->password_hash;
+    }
+
+    /**
+     * Otomatis invalidate tag ketika data user diubah/diupdate
+     */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+        $this->invalidateCache();
+    }
+
+    /**
+     * Otomatis invalidate tag ketika user dihapus
+     */
+    public function afterDelete()
+    {
+        parent::afterDelete();
+        $this->invalidateCache();
+    }
+
+    /**
+     * Menghapus semua cache yang terikat dengan user ini
+     */
+    public function invalidateCache()
+    {
+        TagDependency::invalidate(Yii::$app->cache, self::getUserCacheTag($this->id));
     }
 }
