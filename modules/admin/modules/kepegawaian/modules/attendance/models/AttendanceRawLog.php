@@ -29,10 +29,10 @@ class AttendanceRawLog extends ActiveRecord
     {
         return [
             [['pin', 'scan_time'], 'required'],
-            [['device_id', 'status', 'in_out_mode', 'verify_mode', 'work_code'], 'integer'],
+            [['status', 'in_out_mode', 'verify_mode', 'work_code'], 'integer'],
             [['scan_time', 'scan_date', 'created_at'], 'safe'],
             [['is_processed'], 'boolean'],
-            [['pin'], 'string', 'max' => 30],
+            [['device_id', 'pin'], 'string', 'max' => 30],
             [['pin', 'scan_time'], 'unique', 'targetAttribute' => ['pin', 'scan_time']],
         ];
     }

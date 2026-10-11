@@ -19,8 +19,8 @@ class AdminAsset extends AssetBundle
         // JS bawaan tema (Bootstrap bundle, plugin pendukung)
         'assets/libs/bootstrap/js/bootstrap.bundle.min.js',
         'assets/libs/simplebar/simplebar.min.js',
-        'https://apexcharts.com/samples/assets/stock-prices.js',
-        'assets/js/pages/index.init.js',
+        //'https://apexcharts.com/samples/assets/stock-prices.js',
+        //'assets/js/pages/index.init.js',
         'assets/js/app.js',
     ];
     

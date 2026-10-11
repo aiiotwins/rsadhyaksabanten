@@ -14,6 +14,8 @@ class LogController extends Controller
 {
     public function actionUpload()
     {
+        set_time_limit(0); // 0 = tanpa batas waktu eksekusi
+        ini_set('memory_limit', '512M');
                
         $model = new UploadLogForm();
 
@@ -22,7 +24,7 @@ class LogController extends Controller
             $model->deviceId = Yii::$app->request->post('UploadLogForm')['deviceId'] ?? null;
 
             if ($model->logFile) {
-                $result = $model->import();
+                $result = $model->import(Yii::$app->request->post('UploadLogForm')['deviceId']);
 
                 if ($result['success']) {
                     Yii::$app->response->format = Response::FORMAT_JSON;
@@ -44,15 +46,16 @@ class LogController extends Controller
         ]);
     }
 
-    public function actionExportExcel($year = null, $month = null)
+    public function actionExportExcel($deviceId=null, $year = null, $month = null)
     {
+        $deviceId = $deviceId ?: 'A';
         $year = $year ?: (int)date('Y');
         $month = $month ?: (int)date('n');
 
         $service = new AttendanceExportService();
-        $spreadsheet = $service->generateReport($year, $month);
+        $spreadsheet = $service->generateReport($deviceId, $year, $month);
 
-        $fileName = sprintf('Rekap_Absensi_Uang_Makan_%04d_%02d.xlsx', $year, $month);
+        $fileName = sprintf('Rekap_Absensi_Uang_Makan_%04d_%02d_device_%s.xlsx', $year, $month, $deviceId);
 
         // Set response header untuk download Excel
         $response = Yii::$app->response;

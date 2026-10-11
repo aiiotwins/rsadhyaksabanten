@@ -18,8 +18,8 @@ class UploadLogForm extends Model
     public function rules()
     {
         return [
-            [['logFile'], 'required'],
-            [['deviceId'], 'integer'],
+            [['logFile', 'deviceId'], 'required'],
+            [['deviceId'], 'string', 'max' => 2],
             [['logFile'], 'file',
                 'skipOnEmpty' => false,
                 'extensions' => ['dat', 'txt'],
@@ -37,7 +37,7 @@ class UploadLogForm extends Model
         ];
     }
 
-    public function import()
+    public function import($deviceId = null)
     {
         if (!$this->validate()) {
             return ['success' => false, 'message' => 'Validasi file gagal.'];
@@ -106,7 +106,7 @@ class UploadLogForm extends Model
                 $affectedDates[$scanDate] = true;
 
                 $batchRows[] = [
-                    $this->deviceId ?: null,
+                    $deviceId,
                     $pin,
                     $scanTime,
                     $scanDate,

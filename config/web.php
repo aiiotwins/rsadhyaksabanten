@@ -34,14 +34,13 @@ $config = [
         'admin' => [
             'class' => 'app\modules\admin\Module',
             'modules' => [
-                'kepegawaian' => [
-                    'class' => 'app\modules\admin\modules\kepegawaian\Module',
+                'kepegawaian' => ['class' => 'app\modules\admin\modules\kepegawaian\Module',
                     'modules' => [
-                        'attendance' => [
-                            'class' => 'app\modules\admin\modules\kepegawaian\modules\attendance\Module',
-                        ],
+                        'attendance' => [ 'class' => 'app\modules\admin\modules\kepegawaian\modules\attendance\Module', ],
+                        'scheduler' => [ 'class' => 'app\modules\admin\modules\kepegawaian\modules\scheduler\Module', ],
                     ],
                 ],
+                'master' => [ 'class' => 'app\modules\admin\modules\master\Module', ],
             ],
         ],
     ],

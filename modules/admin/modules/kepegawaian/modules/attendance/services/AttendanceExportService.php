@@ -20,7 +20,7 @@ class AttendanceExportService
      * @param int $month Bulan (misal: 9)
      * @return Spreadsheet
      */
-    public function generateReport($year, $month)
+    public function generateReport($deviceId, $year, $month)
     {
         $startDate = sprintf('%04d-%02d-01', $year, $month);
         $totalDays = (int)date('t', strtotime($startDate));
@@ -52,16 +52,21 @@ class AttendanceExportService
                     'attendance_daily_summary.clock_in',
                     'attendance_daily_summary.clock_out',
                     'duration_hours' => new Expression('ROUND(TIMESTAMPDIFF(SECOND, attendance_daily_summary.clock_in, attendance_daily_summary.clock_out) / 3600, 1)'),
-                    'attendance_daily_summary.status'
+                    'attendance_daily_summary.status',
+                    'attendance_daily_summary.late_minutes'
                 ])
                 ->from('attendance_daily_summary')
-                ->leftJoin('mst_pegawai', 'mst_pegawai.fingerprint_id = attendance_daily_summary.pin')
+                ->leftJoin('mst_pegawai', 'mst_pegawai.fingerprint_id = attendance_daily_summary.pin AND mst_pegawai.device_id = attendance_daily_summary.device_id ')
                 ->where(['between', 'attendance_daily_summary.date', $startDate, $endDate])
+                ->andWhere(['attendance_daily_summary.device_id' => $deviceId])
                 ->andWhere(['not', ['attendance_daily_summary.clock_in' => null]])
                 ->orderBy([
                     'attendance_daily_summary.pin' => SORT_ASC, 
                     'attendance_daily_summary.date' => SORT_ASC
                 ])
+                // echo $logs->createCommand()->getRawSql();
+                // die();
+                // exit;
                 ->all();
 
         // 3. Kelompokkan per PIN (Nama Pegawai)
@@ -76,6 +81,8 @@ class AttendanceExportService
                     'pin' => $pin,
                     'total_hours' => 0.0,
                     'attended_days' => [],
+                    'incomplete_days' => [],
+                    'terlambat' => [],
                     'sakit' => 0,
                     'cuti' => 0,
                     'dl' => 0,
@@ -87,9 +94,27 @@ class AttendanceExportService
 
             $dayNum = (int)$row['day'];
             $groupedData[$pin]['attended_days'][] = $dayNum;
-            if ($row['duration_hours'] !== null) {
+
+            if ($row['late_minutes'] !== null) {
+                $groupedData[$pin]['terlambat'][] = $dayNum;
+            }
+
+            // Cek apakah tidak absen pulang / incomplete
+            $isNoClockOut = empty($row['clock_out']) || $row['clock_out'] === '00:00:00';
+            $st = strtoupper((string)$row['status']);
+
+            if ($isNoClockOut || $st === 'INCOMPLETE') {
+                $groupedData[$pin]['incomplete_days'][] = $dayNum;
+            }
+
+            // Perhitungan durasi jam kerja (hanya jika clock_out ada)
+            if (!$isNoClockOut && $row['duration_hours'] !== null) {
                 $groupedData[$pin]['total_hours'] += (float)$row['duration_hours'];
             }
+
+            // if ($row['duration_hours'] !== null) {
+            //     $groupedData[$pin]['total_hours'] += (float)$row['duration_hours'];
+            // }
 
             // Hitung status khusus jika ada
             $st = strtoupper((string)$row['status']);
@@ -184,6 +209,17 @@ class AttendanceExportService
             // Masuk pada hari libur = kehadiran yang bertepatan dengan Sabtu/Minggu
             $attendedHolidays = array_intersect($holidays, $attended);
             $masukPadaHariLiburStr = !empty($attendedHolidays) ? implode(',', $attendedHolidays) : '0';
+
+            // Tambahkan info incomplete ke array keterangan jika ada
+            if (!empty($data['incomplete_days'])) {
+                $incompleteStr = implode(',', array_unique($data['incomplete_days']));
+                $data['keterangan'][] = "TAP/Incomplete tgl {$incompleteStr}";
+            }
+            
+            if (!empty($data['terlambat'])) {
+                $terlambatStr = implode(',', array_unique($data['terlambat']));
+                $data['keterangan'][] = "Terlambat tgl {$terlambatStr}";
+            }
 
             $keteranganStr = !empty($data['keterangan']) ? implode(', ', $data['keterangan']) : '0';
 

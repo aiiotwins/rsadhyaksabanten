@@ -28,6 +28,15 @@ $years = array_combine($years, $years);
 
 $currentMonth = date('m');
 
+//Daftar Device
+$deviceId = [
+    'A' => 'A',
+    'B' => 'B',
+    'E' => 'E',
+    'F1' => 'F1',
+    'F2' => 'F2', 
+];
+
 ?>
 
 <div class="attendance-log-upload card">
@@ -83,18 +92,18 @@ $currentMonth = date('m');
         </div>  
         
         <div class="row">
-            <!-- <div class="col-md-4">
-                <?php //$form->field($model, 'deviceId')->textInput([
-                    //'type' => 'number',
-                    //'placeholder' => 'ID Mesin (Opsional)'
-                //]) ?>
-            </div> -->
+            <div class="col-md-4">
+                <?= $form->field($model, 'deviceId')->dropDownList($deviceId, ['prompt' => 'Pilih ID Mesin'])
+                 ?>
+            </div>
             <div class="col-md-8">
                 <?= $form->field($model, 'logFile')->fileInput([
                     'class' => 'form-control',
                     'accept' => '.dat,.txt'
                 ]) ?>
-            </div>
+            </div>             
+        </div>
+        <div class="row">
             <div class="col-md-4">
                 <br>
                 <?= Html::submitButton('Unggah & Ekstrak Data', [
@@ -104,7 +113,7 @@ $currentMonth = date('m');
                         'confirm' => 'Mulai proses ekstraksi log fingerprint ke database?'
                     ]
                 ]) ?>
-            </div>               
+            </div>  
         </div>
         <?php ActiveForm::end(); ?>
 
@@ -124,6 +133,14 @@ $currentMonth = date('m');
             </div>
             
             <div class="modal-body">
+                <div class="mb-3">
+                    <label for="year" class="form-label">Pilih Device ID</label>
+                    <?= \yii\helpers\Html::dropDownList('deviceId', 'A', $deviceId, [
+                        'class' => 'form-select',
+                        'id' => 'device_id',
+                        'required' => true
+                    ]) ?>
+                </div>
                 <div class="mb-3">
                     <label for="year" class="form-label">Tahun</label>
                     <?= \yii\helpers\Html::dropDownList('year', $currentYear, $years, [
